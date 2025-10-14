@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     DB_PASSWORD: str
     DB_NAME: str
     STORAGE_PATH: str = "storage"
+    LOGS_DIR: str = "logs"
 
     model_config = SettingsConfigDict(env_file=".env", extra="allow")
 

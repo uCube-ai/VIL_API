@@ -1,5 +1,8 @@
 from fastapi import FastAPI
 from app.routers import article
+from app.core import logging_config
+
+logging_config.setup_transaction_logger()
 
 # This would create the database tables if they don't exist
 # It's often better to manage this with a migration tool like Alembic

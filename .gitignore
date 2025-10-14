@@ -108,3 +108,4 @@ pylint-global.txt
 # Storage
 /storage
 /tests
+/logs
