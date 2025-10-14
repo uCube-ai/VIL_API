@@ -3,23 +3,23 @@ from datetime import datetime
 
 class CECreate(BaseModel):
 
-    prod_id: str
-    prod_name: str
-    sub_prod_id: str
-    sub_prod_name: str
-    sub_subprod_id: str
-    circular_date: datetime
-    eq_citation: str
+    prod_id: str | None = None
+    prod_name: str | None = None
+    sub_prod_id: str | None = None
+    sub_prod_name: str | None = None
+    sub_subprod_id: str | None = None
+    circular_date: datetime | None = None
+    eq_citation: str | None = None
     circular_no: str
-    case_no: str
-    order_no: str
-    judge_name: str
-    cir_subject: str
-    file_data: str
+    case_no: str | None = None
+    order_no: str | None = None
+    judge_name: str | None = None
+    cir_subject: str | None = None
+    file_data: str | None = None
     file_path: str
-    party_name: str
-    created_dt: datetime
-    updated_dt: datetime
+    party_name: str | None = None
+    created_dt: datetime | None = None
+    updated_dt: datetime | None = None
 
 # --- This schema is no longer used by the upload endpoint but can be kept for other potential uses ---
 class CEResponse(BaseModel):

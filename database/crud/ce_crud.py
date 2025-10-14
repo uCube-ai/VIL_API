@@ -1,5 +1,5 @@
 from database.models.ce_model import CE
-from .base import CRUDBase 
+from database.crud.base import CRUDBase 
 
 
 class CRUDCE(CRUDBase[CE]):
