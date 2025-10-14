@@ -2,7 +2,7 @@ from database.models.ce_model import CE
 from .base import CRUDBase 
 
 
-class CRUDArticle(CRUDBase[CE]):
+class CRUDCE(CRUDBase[CE]):
     pass
 
-ce = CRUDArticle(CE)
+ce = CRUDCE(CE)
