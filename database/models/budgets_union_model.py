@@ -1,16 +1,16 @@
 from sqlalchemy import Column, BigInteger, DateTime, Text
 from database.db_session import Base
 
-class Article(Base):
+class BudgetsUnion(Base):
     """
-    SQLAlchemy ORM model for the 'articles' table.
+    SQLAlchemy ORM model for the 'Budgets Union' table.
     """
-    __tablename__ = "articles"
+    __tablename__ = "budgets_union"
 
-    article_id = Column(BigInteger, primary_key=True, autoincrement=True)
-    article_date = Column(DateTime, nullable=True, index=True)
-    summary = Column(Text, nullable=True)
-    author = Column(Text, nullable=True)
+    circular_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    circular_date = Column(DateTime, nullable=True, index=True)
+    circular_no = Column(Text, nullable=True)
+    cir_subject = Column(Text, nullable=True)
     file_storage_path = Column(Text, nullable=False)
     html_file_path = Column(Text, nullable=False, unique=True)
     created_dt = Column(DateTime, nullable=True)
@@ -21,4 +21,4 @@ class Article(Base):
         """
         Provides a developer-friendly representation of the object, useful for debugging.
         """
-        return f"<Article(article_id={self.article_id}, author='{self.author}', date='{self.article_date}')>"
+        return f"<BudgetsUnion(circular_id={self.circular_id}, circular_no='{self.circular_no}')>"
