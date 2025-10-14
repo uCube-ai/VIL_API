@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:16-alpine
+
+    container_name: VIL_API 
+
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    
+    ports:
+      - "8023:5432"
+
+    volumes:
+      - /mnt/powerscale-storage/VIL_API:/var/lib/postgresql/data
+
+    restart: always
+
+volumes:
+  postgres_data:
+    driver: /mnt/powerscale-storage/VIL_API
+
+# sudo docker compose --env-file /home/ubuntu/projects/vil_pull_data/VIL_API/.env up --build
