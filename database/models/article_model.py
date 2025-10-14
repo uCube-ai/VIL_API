@@ -15,10 +15,10 @@ class Article(Base):
     html_file_path = Column(Text, nullable=False, unique=True)
     created_dt = Column(DateTime, nullable=True)
     updated_dt = Column(DateTime, nullable=True)
+    ingestion_dt = Column(DateTime, nullable=False)
 
     def __repr__(self):
         """
         Provides a developer-friendly representation of the object, useful for debugging.
         """
-        # Updated to match the class name
         return f"<Article(article_id={self.article_id}, author='{self.author}', date='{self.article_date}')>"
