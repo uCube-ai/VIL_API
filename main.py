@@ -1,6 +1,6 @@
 # my_project/main.py
 from fastapi import FastAPI
-from app.routers import articles, cases
+from app.routers import article, cases
 from database import db_session
 
 # This would create the database tables if they don't exist
@@ -14,7 +14,7 @@ app = FastAPI(
 )
 
 # Include the routers from the 'app/routers' directory
-app.include_router(articles.router, prefix="/articles", tags=["Articles"])
+app.include_router(article.router, prefix="/articles", tags=["Articles"])
 # app.include_router(cases.router, prefix="/cases", tags=["Cases"])
 
 @app.get("/", tags=["Root"])

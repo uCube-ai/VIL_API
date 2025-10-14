@@ -1,0 +1,20 @@
+# my_project/pyproject.toml
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my-fastapi-project"
+version = "0.1.0"
+description = "API for processing articles and cases from JSON exports."
+authors = [
+  { name = "Nihal", email = "niha@ucube.ai" },
+]
+requires-python = ">=3.9"
+
+[tool.setuptools]
+packages = ["app", "database"]
+
+[tool.setuptools.package-data]
+app = ["*"]

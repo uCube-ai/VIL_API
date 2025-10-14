@@ -107,4 +107,4 @@ pylint-global.txt
 
 # Storage
 /storage
-/scripts
+/tests

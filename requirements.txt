@@ -6,3 +6,4 @@ pydantic[email]
 aiofiles
 python-dotenv
 werkzeug
+pydantic_settings
