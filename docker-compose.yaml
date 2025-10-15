@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: vil_api_db
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - "8023:5432"
+    volumes:
+      - "${PERSISTENT_STORAGE_PATH}/postgres_data:/var/lib/postgresql/data"
+    restart: always
+
+  api:
+    build: .
+    container_name: vil_api_app
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+    depends_on:
+      - db
+    ports:
+      - "8024:8024"
+    volumes:
+      - "${PERSISTENT_STORAGE_PATH}/logs:/app/logs"
+      - "${PERSISTENT_STORAGE_PATH}/storage:/app/storage"
+    restart: always
