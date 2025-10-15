@@ -37,5 +37,4 @@ class SGST(Base):
         """
         Provides a developer-friendly representation of the object, useful for debugging.
         """
-        # CORRECTED: Uses fields that exist in this model.
         return f"<SGST(case_id={self.case_id}, circular_no='{self.circular_no}')>"
