@@ -50,7 +50,7 @@ def create_upload_router(config: RouterConfig) -> APIRouter:
 
             table_info = None
             for item in payload:
-                if item.get("type") == "table" and item.get("name") == config.table_name:
+                if item.get("type") == "table" and item.get("name") == config.vil_table_name:
                     table_info = item
                     break
 
