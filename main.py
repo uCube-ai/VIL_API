@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import article, budgets_union, ce, cgst, cu, dgft, sgst, st
+from app.routers import article, budgets_union, ce, cgst, cu, dgft, sgst, st, vat
 from app.core import logging_config
 
 logging_config.setup_transaction_logger()
@@ -22,6 +22,7 @@ app.include_router(cu.router, prefix="/cu", tags=["Customs"])
 app.include_router(dgft.router, prefix="/dgft", tags=["Directorate General of Foreign Trade"])
 app.include_router(sgst.router, prefix="/sgst", tags=["State Goods and Services Tax"])
 app.include_router(st.router, prefix="/st", tags=["Service Tax"])
+app.include_router(vat.router, prefix="/vat", tags=["Value Added Tax"])
 
 @app.get("/", tags=["Root"])
 def read_root():
