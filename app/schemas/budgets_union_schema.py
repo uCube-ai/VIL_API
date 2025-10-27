@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 
 class BudgetsUnionCreate(BaseModel):
+    vil_id: str | None = None
     circular_date: datetime | None = None
     circular_no: str
     cir_subject: str | None = None
@@ -12,6 +13,7 @@ class BudgetsUnionCreate(BaseModel):
 
 # --- This schema is no longer used by the upload endpoint but can be kept for other potential uses ---
 class BudgetsUnionResponse(BaseModel):
+    vil_id: str | None = None
     budgets_union_id: int
     circular_date: datetime | None
     circular_no: str | None

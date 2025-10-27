@@ -19,6 +19,7 @@ class FeaturesService(BaseDataProcessingService):
         Maps the FeaturesCreate schema to the Features model fields.
         """
         return {
+            "vil_id": item.vil_id,
             "feature_date": item.feature_date,
             "subject": item.subject,
             "summary": item.summary,

@@ -8,6 +8,7 @@ class BudgetsUnion(Base):
     __tablename__ = "budgets_union"
 
     circular_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    vil_id = Column(BigInteger, nullable=True)
     circular_date = Column(DateTime, nullable=True, index=True)
     circular_no = Column(Text, nullable=True)
     cir_subject = Column(Text, nullable=True)

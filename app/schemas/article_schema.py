@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 
 class ArticleCreate(BaseModel):
+    vil_id: str | None = None
     article_date: datetime | None = None
     summary: str | None = None
     author: str | None = None
@@ -12,6 +13,7 @@ class ArticleCreate(BaseModel):
 
 # --- This schema is no longer used by the upload endpoint but can be kept for other potential uses ---
 class ArticleResponse(BaseModel):
+    vil_id: str | None = None
     article_id: int
     article_date: datetime | None
     summary: str | None

@@ -70,7 +70,7 @@ def create_upload_router(config: RouterConfig) -> APIRouter:
             failure_count = 0
 
             for index, item_dict in enumerate(items_to_process):
-                item_identifier = item_dict.get('file_path', f'unknown_{config.entity_name_singular}_at_index_{index}')
+                item_identifier = item_dict.get('vil_id', f'unknown_{config.entity_name_singular}_at_index_{index}')
                 
                 try:
                     request_timestamp = datetime.now(timezone.utc)
@@ -81,20 +81,20 @@ def create_upload_router(config: RouterConfig) -> APIRouter:
                         ingestion_time=request_timestamp
                     )
                     
-                    message = f"'{new_db_item.html_file_path}' has been successfully added to the LKS X VIL data dump"
+                    message = f"File with vil_id: {new_db_item.vil_id} has been successfully added to the LKS X VIL data dump"
                     success_messages.append(message)
                     
                     pk_value = getattr(new_db_item, config.pk_field_name, "N/A")
-                    transaction_logger.info(f"SUCCESS: {config.entity_name_singular.title()} '{item_identifier}' ingested. DB ID: {pk_value}")
+                    transaction_logger.info(f"SUCCESS: {config.entity_name_singular.title()} with vil_id:'{item_identifier}' ingested. DB ID: {pk_value}")
                     success_count += 1
 
                 except ValidationError as e:
                     failure_count += 1
-                    transaction_logger.error(f"FAILURE: {config.entity_name_singular.title()} '{item_identifier}' failed validation. Reason: {e.errors()}")
+                    transaction_logger.error(f"FAILURE: {config.entity_name_singular.title()} with vil_id:'{item_identifier}' failed validation. Reason: {e.errors()}")
                     continue
                 except Exception as e:
                     failure_count += 1
-                    transaction_logger.error(f"FAILURE: {config.entity_name_singular.title()} '{item_identifier}' failed processing. Reason: {type(e).__name__} - {e}")
+                    transaction_logger.error(f"FAILURE: {config.entity_name_singular.title()} with vil_id:'{item_identifier}' failed processing. Reason: {type(e).__name__} - {e}")
                     continue
 
             if not success_messages:

@@ -20,6 +20,7 @@ class SGSTService(BaseDataProcessingService):
         Maps the SGSTCreate schema to the SGST model fields.
         """
         return {
+            "vil_id": item.vil_id,
             "prod_id": item.prod_id,
             "prod_name": item.prod_name,
             "sub_prod_id": item.sub_prod_id,

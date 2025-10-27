@@ -8,6 +8,7 @@ class CE(Base):
     __tablename__ = "ce"
 
     case_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    vil_id = Column(BigInteger, nullable=True)
     prod_id = Column(Text, nullable=True)
     prod_name = Column(Text, nullable=True)
     sub_prod_id = Column(Text, nullable=True)

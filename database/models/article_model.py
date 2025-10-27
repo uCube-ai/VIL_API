@@ -8,6 +8,7 @@ class Article(Base):
     __tablename__ = "articles"
 
     article_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    vil_id = Column(BigInteger, nullable=True)
     article_date = Column(DateTime, nullable=True, index=True)
     summary = Column(Text, nullable=True)
     author = Column(Text, nullable=True)

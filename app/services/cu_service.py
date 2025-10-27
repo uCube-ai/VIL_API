@@ -19,6 +19,7 @@ class CUService(BaseDataProcessingService):
         Maps the CECreate schema to the CE model fields.
         """
         return {
+            "vil_id": item.vil_id,
             "prod_id": item.prod_id,
             "prod_name": item.prod_name,
             "sub_prod_id": item.sub_prod_id,

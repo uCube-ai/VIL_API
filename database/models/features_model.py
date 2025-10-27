@@ -8,6 +8,7 @@ class Features(Base):
     __tablename__ = "features"
 
     feature_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    vil_id = Column(BigInteger, nullable=True)
     feature_date = Column(DateTime, nullable=True, index=True)
     subject = Column(Text, nullable=True)
     summary = Column(Text, nullable=True)
