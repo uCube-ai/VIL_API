@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 
 class CECreate(BaseModel):
-    vil_id: int | None = None
+    vil_id: int
     prod_id: str | None = None
     prod_name: str | None = None
     sub_prod_id: str | None = None

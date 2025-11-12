@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 
 class FeaturesCreate(BaseModel):
-    vil_id: int | None = None
+    vil_id: int
     feature_date: datetime | None = None
     subject: str | None = None
     summary: str | None = None
