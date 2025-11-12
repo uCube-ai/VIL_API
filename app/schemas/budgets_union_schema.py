@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 
 class BudgetsUnionCreate(BaseModel):
-    vil_id: str | None = None
+    vil_id: int | None = None
     circular_date: datetime | None = None
     circular_no: str
     cir_subject: str | None = None

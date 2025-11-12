@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 
 class ArticleCreate(BaseModel):
-    vil_id: str | None = None
+    vil_id: int | None = None
     article_date: datetime | None = None
     summary: str | None = None
     author: str | None = None

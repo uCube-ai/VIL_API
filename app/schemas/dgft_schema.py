@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 
 class DGFTCreate(BaseModel):
-    vil_id: str | None = None
+    vil_id: int | None = None
     prod_id: str | None = None
     prod_name: str | None = None
     sub_prod_id: str | None = None

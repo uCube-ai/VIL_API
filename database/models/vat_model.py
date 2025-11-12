@@ -8,7 +8,7 @@ class VAT(Base):
     __tablename__ = "vat"
 
     case_id = Column(BigInteger, primary_key=True, autoincrement=True)
-    vil_id = Column(BigInteger, nullable=True)
+    vil_id = Column(BigInteger, nullable=False, unique=True)
     prod_id = Column(Text, nullable=True)
     prod_name = Column(Text, nullable=True)
     sub_prod_id = Column(Text, nullable=True)
