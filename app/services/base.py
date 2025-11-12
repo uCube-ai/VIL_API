@@ -73,3 +73,44 @@ class BaseDataProcessingService(ABC):
             logger.error(f"Error processing item. Rolling back transaction. Error: {e}")
             db.rollback()
             raise
+
+    async def process_update_item(self, db: Session, item: BaseModel, ingestion_time: datetime):
+        """
+        It assumes the item exists and will skip (return None) if it doesn't.
+        """
+        try:
+            # 1. Get the vil_id (which Pydantic has validated)
+            item_vil_id = item.vil_id
+            
+            # 2. Find the existing database object
+            db_obj = self.crud.get_by_vil_id(db=db, vil_id=item_vil_id)
+            
+            if not db_obj:
+                # --- SKIP PATH ---
+                logger.warning(f"Update skipped: Record with vil_id {item_vil_id} not found.")
+                return None
+
+            # --- UPDATE PATH ---
+            logger.info(f"Found existing record (vil_id: {item_vil_id}). Updating...")
+            
+            # 3. Prepare the data dictionary for the update
+            data_dict = self._prepare_initial_data(item=item, ingestion_time=ingestion_time)
+            data_dict.pop('file_storage_path', None)
+
+            # 4. Update the object in the database session
+            db_obj = self.crud.update(db=db, db_obj=db_obj, obj_in=data_dict)
+            
+            # 5. Overwrite the associated JSON file with the new data
+            json_content_to_save = item.model_dump(mode='json')
+            async with aiofiles.open(db_obj.file_storage_path, 'w', encoding='utf-8') as f:
+                await f.write(json.dumps(json_content_to_save, indent=4))
+            
+            db.commit()
+            db.refresh(db_obj)
+            
+            return db_obj
+
+        except (SQLAlchemyError, IOError, Exception) as e:
+            logger.error(f"Error processing update for vil_id {item.vil_id}. Rolling back transaction. Error: {e}")
+            db.rollback()
+            raise

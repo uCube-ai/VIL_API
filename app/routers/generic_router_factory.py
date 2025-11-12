@@ -17,6 +17,7 @@ transaction_logger = logging.getLogger("transaction_logger")
 def create_upload_router(config: RouterConfig) -> APIRouter:
     """
     A factory function that creates and configures an APIRouter for a specific data type.
+    It now creates TWO endpoints: /upload (Upsert) and /update (Update-Only).
     """
     router = APIRouter()
 
@@ -24,7 +25,7 @@ def create_upload_router(config: RouterConfig) -> APIRouter:
         "/upload",
         response_model=UploadSuccessResponse,
         status_code=status.HTTP_201_CREATED,
-        summary=f"Endpoint to upload VIL {config.entity_name_plural.title()}",
+        summary=f"Endpoint to upload and upsert {config.entity_name_plural.title()}",
         description=f"Processes each {config.entity_name_singular} from a JSON export, saving data and returning a simple success message for each."
     )
     async def upload_from_export(
@@ -119,6 +120,100 @@ def create_upload_router(config: RouterConfig) -> APIRouter:
             transaction_logger.info("END OF TRANSACTION")
             transaction_logger.info("=" * 50)
 
+            transaction_logger.removeHandler(file_handler)
+            file_handler.close()
+
+    @router.post(
+        "/update",
+        response_model=UploadSuccessResponse,
+        status_code=status.HTTP_200_OK,
+        summary=f"Endpoint to update existing {config.entity_name_plural.title()}",
+        description=f"Processes each {config.entity_name_singular} from a JSON export. ONLY updates items found via vil_id. Skips unknown items."
+    )
+    async def update_from_export(
+        payload: List[Dict[str, Any]] = Body(...),
+        db: Session = Depends(get_db)
+    ):
+        # --- LOGGING SETUP ---
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
+        log_filename = f"update_{config.table_name}_{timestamp}.txt"
+        log_filepath = os.path.join(settings.LOGS_DIR, log_filename)
+        file_handler = logging.FileHandler(log_filepath)
+        file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S'))
+        transaction_logger.addHandler(file_handler)
+        start_time = datetime.now(timezone.utc)
+        
+        try:
+            transaction_logger.info("=" * 50)
+            transaction_logger.info(f"STARTING NEW 'UPDATE-ONLY' DUMP PROCESSING for '{config.table_name}'")
+            transaction_logger.info(f"Log file: {log_filename}")
+            transaction_logger.info("=" * 50)
+
+            # --- PAYLOAD PARSING ---
+            table_info = None
+            for item in payload:
+                if item.get("type") == "table" and item.get("name") == config.vil_table_name:
+                    table_info = item
+                    break
+            if not table_info:
+                detail = f"The JSON payload is missing the required '{config.vil_table_name}' table data block."
+                transaction_logger.error(f"FAILURE: {detail}")
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+            
+            items_to_process = table_info.get("data", [])
+            if not items_to_process:
+                message = f"Payload processed, but no {config.entity_name_plural} were found in the data array."
+                transaction_logger.warning(message)
+                return {"message": message, "processed_items": []}
+
+            success_messages = []
+            success_count = 0
+            failure_count = 0
+
+            for index, item_dict in enumerate(items_to_process):
+                item_identifier = item_dict.get('vil_id', f'unknown_{config.entity_name_singular}_at_index_{index}')
+                
+                try:
+                    request_timestamp = datetime.now(timezone.utc)
+                    validated_data = config.pydantic_schema(**item_dict)
+                    
+                    updated_db_item = await config.service.process_update_item(
+                        db=db,
+                        item=validated_data,
+                        ingestion_time=request_timestamp
+                    )
+                    
+                    if updated_db_item:
+                        message = f"File with vil_id: {updated_db_item.vil_id}' has been successfully updated."
+                        success_messages.append(message)
+                        pk_value = getattr(updated_db_item, config.pk_field_name, "N/A")
+                        transaction_logger.info(f"SUCCESS: {config.entity_name_singular.title()} with vil_id:'{item_identifier}' updated. DB ID: {pk_value}")
+                        success_count += 1
+                    else:
+                        failure_count += 1
+                        transaction_logger.warning(f"SKIPPED (Update): Item '{item_identifier}' not found in DB.")
+                        
+                except (ValidationError, Exception) as e:
+                    failure_count += 1
+                    transaction_logger.error(f"FAILURE (Update): Item '{item_identifier}'. Reason: {e}")
+                    continue
+
+            return {
+                "message": f"Successfully updated {success_count} item(s). {failure_count} failed or were skipped.",
+                "processed_items": success_messages
+            }
+
+        finally:
+            end_time = datetime.now(timezone.utc)
+            duration = end_time - start_time
+            transaction_logger.info("=" * 50)
+            transaction_logger.info("PROCESSING SUMMARY")
+            transaction_logger.info(f"Total items in payload: {len(items_to_process)}")
+            transaction_logger.info(f"Successfully updated: {success_count}")
+            transaction_logger.info(f"Failed or skipped: {failure_count}")
+            transaction_logger.info(f"Total processing time: {duration}")
+            transaction_logger.info("END OF TRANSACTION")
+            transaction_logger.info("=" * 50)
             transaction_logger.removeHandler(file_handler)
             file_handler.close()
 
