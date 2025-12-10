@@ -1,12 +1,12 @@
 from app.routers.router_config import RouterConfig
-from app.routers.generic_router_factory import create_upload_router
+from app.routers.generic_router_factory import create_router
 from app.services.features_service import features_service
-from app.schemas import features_schema
+from app.schemas.features_schema import FeaturesCreate
 
 
 features_config = RouterConfig(
     table_name="features",
-    pydantic_schema=features_schema.FeaturesCreate,
+    pydantic_schema=FeaturesCreate,
     service=features_service,
     pk_field_name="feature_id",
     entity_name_singular="Feature",
@@ -14,4 +14,4 @@ features_config = RouterConfig(
 )
 
 # 2. Create the router by calling the factory
-router = create_upload_router(config=features_config)
+router = create_router(config=features_config)

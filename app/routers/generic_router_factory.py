@@ -14,7 +14,7 @@ from app.routers.router_config import RouterConfig
 
 transaction_logger = logging.getLogger("transaction_logger")
 
-def create_upload_router(config: RouterConfig) -> APIRouter:
+def create_router(config: RouterConfig) -> APIRouter:
     """
     A factory function that creates and configures an APIRouter for a specific data type.
     It now creates TWO endpoints: /upload (Upsert) and /update (Update-Only).
