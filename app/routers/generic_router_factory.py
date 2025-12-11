@@ -136,6 +136,8 @@ def create_router(config: RouterConfig) -> APIRouter:
             success_messages = []
             success_count = 0
             failure_count = 0
+            created_count = 0
+            updated_count = 0
 
             for index, item_dict in enumerate(items_to_process):
                 item_identifier = item_dict.get('vil_id', f'unknown_{config.entity_name_singular}_at_index_{index}')
@@ -143,22 +145,34 @@ def create_router(config: RouterConfig) -> APIRouter:
                 try:
                     request_timestamp = datetime.now(timezone.utc)
                     validated_data = config.pydantic_schema(**item_dict)
-                    
-                    updated_db_item = await config.service.process_update_item(
+
+                    # A. TRY UPDATE FIRST
+                    db_item = await config.service.process_update_item(
                         db=db,
                         item=validated_data,
-                        ingestion_time=request_timestamp
-                    )
+                        ingestion_time=request_timestamp)
                     
-                    if updated_db_item:
-                        message = f"File with vil_id: {updated_db_item.vil_id}' has been successfully updated."
-                        success_messages.append(message)
-                        pk_value = getattr(updated_db_item, config.pk_field_name, "N/A")
-                        transaction_logger.info(f"SUCCESS: {config.entity_name_singular.title()} with vil_id:'{item_identifier}' updated. DB ID: {pk_value}")
-                        success_count += 1
+                    if db_item:
+                        action_type = "UPDATED"
+                        updated_count += 1
                     else:
-                        failure_count += 1
-                        transaction_logger.warning(f"SKIPPED (Update): Item '{item_identifier}' not found in DB.")
+                        # --- CREATE PATH (Fallback if not found) ---
+                        transaction_logger.info(f"Item '{item_identifier}' not found. Switching to CREATE.")
+                        
+                        db_item = await config.service.process_and_create_item(
+                            db=db,
+                            item=validated_data,
+                            ingestion_time=request_timestamp)
+                        action_type = "CREATED"
+                        created_count += 1
+                    
+                    # --- SUCCESS HANDLING (Common for both) ---
+                    message = f"{action_type}: vil_id {db_item.vil_id}"
+                    success_messages.append(message)
+                    
+                    pk_value = getattr(db_item, config.pk_field_name, "N/A")
+                    transaction_logger.info(f"SUCCESS ({action_type}): {config.entity_name_singular} '{item_identifier}'. DB ID: {pk_value}")
+                    success_count += 1
                         
                 except (ValidationError, Exception) as e:
                     failure_count += 1

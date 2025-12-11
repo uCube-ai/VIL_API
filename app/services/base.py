@@ -27,7 +27,7 @@ class BaseDataProcessingService(ABC):
         self.pk_field_name = pk_field_name
 
     @abstractmethod
-    def _prepare_initial_data(self, item: BaseModel, ingestion_time: datetime) -> dict:
+    def _prepare_initial_data(self, item: BaseModel, ingestion_time: datetime, file_storage_path: str) -> dict:
         """
         Abstract method to be implemented by child classes.
         This method is responsible for mapping the Pydantic schema fields
@@ -102,7 +102,11 @@ class BaseDataProcessingService(ABC):
             logger.info(f"Found existing record (vil_id: {item_vil_id}). Updating...")
             
             # 3. Prepare the data dictionary for the update
-            data_dict = self._prepare_initial_data(item=item, ingestion_time=ingestion_time)
+            data_dict = self._prepare_initial_data(
+                item=item, 
+                ingestion_time=ingestion_time,
+                file_storage_path=db_obj.file_storage_path)
+
             data_dict.pop('file_storage_path', None)
 
             # 4. Update the object in the database session
