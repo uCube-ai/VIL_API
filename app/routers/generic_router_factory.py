@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Body, status
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from pydantic import ValidationError
 
 from database.db_session import get_db
@@ -32,7 +33,6 @@ def create_router(config: RouterConfig) -> APIRouter:
         payload: Dict[str, Any] = Body(...),
         db: Session = Depends(get_db)
     ):
-        
         with transaction_logging(table_name=config.table_name, operation="upload") as log_file:
             start_time = datetime.now(timezone.utc)
 
@@ -40,7 +40,7 @@ def create_router(config: RouterConfig) -> APIRouter:
             payload_table_name = payload.get("name")
             if payload_table_name != config.vil_table_name:
                 detail = (f"Table mismatch. Endpoint expects '{config.vil_table_name}', "
-                        f"but payload contains data for '{payload_table_name}'.")
+                          f"but payload contains data for '{payload_table_name}'.")
                 transaction_logger.error(f"FAILURE: {detail}")
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
 
@@ -49,41 +49,74 @@ def create_router(config: RouterConfig) -> APIRouter:
             if not items_to_process:
                 message = f"Payload received, but 'data' array is empty for {config.entity_name_plural}."
                 transaction_logger.warning(message)
-                return {"message": message, "processed_items": []}
+                return {"message": message, "processed_items": [], "failed_items": []}
 
             # 2. Processing Logic
             success_messages = []
+            failed_items_list = []
             success_count = 0
             failure_count = 0
 
             for index, item_dict in enumerate(items_to_process):
-                item_identifier = item_dict.get('vil_id', f'unknown_{config.entity_name_singular}_at_index_{index}')
+                item_identifier = item_dict.get('vil_id', f'index_{index}')
                 
                 try:
                     request_timestamp = datetime.now(timezone.utc)
+                    
+                    # A. Validation
                     validated_data = config.pydantic_schema(**item_dict)
+                    
+                    # B. Creation (Insert + File Write)
                     new_db_item = await config.service.process_and_create_item(
                         db=db,
                         item=validated_data,
                         ingestion_time=request_timestamp
                     )
                     
-                    message = f"File with vil_id: {new_db_item.vil_id} has been successfully added to the LKS X VIL data dump"
+                    # C. Success Handling
+                    message = f"CREATED: vil_id {new_db_item.vil_id}"
                     success_messages.append(message)
                     
                     pk_value = getattr(new_db_item, config.pk_field_name, "N/A")
-                    transaction_logger.info(f"SUCCESS: {config.entity_name_singular.title()} with vil_id:'{item_identifier}' ingested. DB ID: {pk_value}")
+                    transaction_logger.info(f"SUCCESS: {config.entity_name_singular} '{item_identifier}' ingested. DB ID: {pk_value}")
                     success_count += 1
 
                 except ValidationError as e:
+                    error_msgs = [f"Field '{err['loc'][-1]}': {err['msg']}" for err in e.errors()]
+                    clean_msg = f"Schema Validation Error: {'; '.join(error_msgs)}"
+                    
                     failure_count += 1
-                    transaction_logger.error(f"FAILURE: {config.entity_name_singular.title()} with vil_id:'{item_identifier}' failed validation. Reason: {e.errors()}")
-                    continue
+                    transaction_logger.error(f"Item {item_identifier}: {clean_msg}")
+                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+
+                except IntegrityError as e:
+                    clean_msg = "Duplicate Error: This record already exists (vil_id or unique constraint violation)."
+                    
+                    failure_count += 1
+                    transaction_logger.error(f"Item {item_identifier}: {clean_msg}")
+                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+
+                except (IOError, OSError) as e:
+                    clean_msg = f"File System Error: Unable to write JSON file. {e.strerror}"
+                    
+                    failure_count += 1
+                    transaction_logger.critical(f"Item {item_identifier}: {clean_msg}")
+                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+
+                except SQLAlchemyError as e:
+                    clean_msg = f"Database Error: {str(e.__cause__) or str(e)}"
+                    
+                    failure_count += 1
+                    transaction_logger.error(f"Item {item_identifier}: {clean_msg}")
+                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+
                 except Exception as e:
+                    clean_msg = f"Unexpected Server Error: {str(e)}"
+                    
                     failure_count += 1
-                    transaction_logger.error(f"FAILURE: {config.entity_name_singular.title()} with vil_id:'{item_identifier}' failed processing. Reason: {type(e).__name__} - {e}")
-                    continue
-            
+                    transaction_logger.error(f"Item {item_identifier}: {clean_msg}")
+                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+
             # 3. Log Summary
             end_time = datetime.now(timezone.utc)
             duration = end_time - start_time
@@ -94,14 +127,12 @@ def create_router(config: RouterConfig) -> APIRouter:
             transaction_logger.info(f"Failed: {failure_count}")
             transaction_logger.info(f"Duration: {duration}")
 
-            if not success_messages:
-                detail = f"Data was provided, but no {config.entity_name_plural} could be successfully processed due to errors."
-                raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
-
             return {
-                "message": f"Successfully processed {len(success_messages)} {config.entity_name_singular}(s).",
-                "processed_items": success_messages
+                "message": f"Upload processed. Success: {success_count}, Failed: {failure_count}",
+                "processed_items": success_messages,
+                "failed_items": failed_items_list
             }
+
 
     @router.post(
         "/update",
@@ -121,9 +152,10 @@ def create_router(config: RouterConfig) -> APIRouter:
             # 1. Validation
             payload_table_name = payload.get("name")
             if payload_table_name != config.vil_table_name:
-                 detail = f"Table mismatch: Expected '{config.vil_table_name}', got '{payload_table_name}'"
-                 transaction_logger.error(detail)
-                 raise HTTPException(status_code=400, detail=detail)
+                detail = (f"Table Mismatch: Endpoint expects data for '{config.vil_table_name}', "
+                           f"but received payload for '{payload_table_name}'.")
+                transaction_logger.error(detail)
+                raise HTTPException(status_code=400, detail=detail)
             
             items_to_process = payload.get("data", [])
 
@@ -134,10 +166,9 @@ def create_router(config: RouterConfig) -> APIRouter:
 
             # 2. Processing
             success_messages = []
+            failed_items_list = []
             success_count = 0
             failure_count = 0
-            created_count = 0
-            updated_count = 0
 
             for index, item_dict in enumerate(items_to_process):
                 item_identifier = item_dict.get('vil_id', f'unknown_{config.entity_name_singular}_at_index_{index}')
@@ -146,52 +177,65 @@ def create_router(config: RouterConfig) -> APIRouter:
                     request_timestamp = datetime.now(timezone.utc)
                     validated_data = config.pydantic_schema(**item_dict)
 
-                    # A. TRY UPDATE FIRST
-                    db_item = await config.service.process_update_item(
-                        db=db,
-                        item=validated_data,
-                        ingestion_time=request_timestamp)
-                    
-                    if db_item:
-                        action_type = "UPDATED"
-                        updated_count += 1
-                    else:
-                        # --- CREATE PATH (Fallback if not found) ---
-                        transaction_logger.info(f"Item '{item_identifier}' not found. Switching to CREATE.")
-                        
-                        db_item = await config.service.process_and_create_item(
-                            db=db,
-                            item=validated_data,
-                            ingestion_time=request_timestamp)
-                        action_type = "CREATED"
-                        created_count += 1
+                    db_item = await config.service.process_update_item(db=db, 
+                                                                       item=validated_data, 
+                                                                       ingestion_time=request_timestamp) 
+                    action_type = "UPDATED"
+                    if not db_item:
+                         db_item = await config.service.process_and_create_item(db=db, 
+                                                                                item=validated_data, 
+                                                                                ingestion_time=request_timestamp)
+                         action_type = "CREATED"
                     
                     # --- SUCCESS HANDLING (Common for both) ---
-                    message = f"{action_type}: vil_id {db_item.vil_id}"
-                    success_messages.append(message)
-                    
-                    pk_value = getattr(db_item, config.pk_field_name, "N/A")
-                    transaction_logger.info(f"SUCCESS ({action_type}): {config.entity_name_singular} '{item_identifier}'. DB ID: {pk_value}")
+                    success_messages.append(f"{action_type}: vil_id {db_item.vil_id}")
                     success_count += 1
                         
-                except (ValidationError, Exception) as e:
+                except ValidationError as e:
+                    error_msgs = [f"Field '{err['loc'][-1]}': {err['msg']}" for err in e.errors()]
+                    clean_msg = f"Schema Validation Error: {'; '.join(error_msgs)}"
+                    
                     failure_count += 1
-                    transaction_logger.error(f"FAILURE (Update): Item '{item_identifier}'. Reason: {e}")
-                    continue
+                    transaction_logger.error(f"Item {item_identifier}: {clean_msg}")
+                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+
+                except IntegrityError as e:
+                    clean_msg = "Database Constraint Error: This record likely already exists or violates a unique constraint."
+                    
+                    failure_count += 1
+                    transaction_logger.error(f"Item {item_identifier}: {clean_msg}")
+                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+
+                except (IOError, OSError) as e:
+                    clean_msg = f"File System Error: Unable to write JSON file to storage. {e.strerror}"
+                    
+                    failure_count += 1
+                    transaction_logger.critical(f"Item {item_identifier}: {clean_msg}")
+                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+
+                except SQLAlchemyError as e:
+                    clean_msg = f"Database Error: {str(e.__cause__) or str(e)}"
+                    
+                    failure_count += 1
+                    transaction_logger.error(f"Item {item_identifier}: {clean_msg}")
+                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+
+                except Exception as e:
+                    clean_msg = f"Unexpected Server Error: {str(e)}"
+                    
+                    failure_count += 1
+                    transaction_logger.error(f"Item {item_identifier}: {clean_msg}")
+                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
 
             # 3. Log Summary
             end_time = datetime.now(timezone.utc)
             duration = end_time - start_time
-            
-            transaction_logger.info("PROCESSING SUMMARY")
-            transaction_logger.info(f"Total items: {len(items_to_process)}")
-            transaction_logger.info(f"Success: {success_count}")
-            transaction_logger.info(f"Skipped/Failed: {failure_count}")
-            transaction_logger.info(f"Duration: {duration}")
+            transaction_logger.info(f"Summary - Success: {success_count}, Failed: {failure_count}, Time: {duration}")
 
             return {
-                "message": f"Successfully updated {success_count} item(s). {failure_count} failed or were skipped.",
-                "processed_items": success_messages
+                "message": f"Processed {len(items_to_process)} items.",
+                "processed_items": success_messages,
+                "failed_items": failed_items_list 
             }
 
     return router
