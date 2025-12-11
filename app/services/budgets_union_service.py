@@ -14,7 +14,7 @@ class BudgetsUnionService(BaseDataProcessingService):
             pk_field_name="circular_id"
         )
 
-    def _prepare_initial_data(self, item: BudgetsUnionCreate, ingestion_time: datetime) -> dict:
+    def _prepare_initial_data(self, item: BudgetsUnionCreate, ingestion_time: datetime, file_storage_path: str) -> dict:
         """
         Maps the BudgetsUnionCreate schema to the BudgetsUnion model fields.
         """
@@ -26,7 +26,7 @@ class BudgetsUnionService(BaseDataProcessingService):
             "html_file_path": item.file_path,
             "created_dt": item.created_dt,
             "updated_dt": item.updated_dt,
-            "file_storage_path": "",  # Placeholder
+            "file_storage_path": file_storage_path,
             "ingestion_dt": ingestion_time
         }
 

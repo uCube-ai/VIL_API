@@ -14,7 +14,7 @@ class ArticleService(BaseDataProcessingService):
             pk_field_name="article_id"
         )
 
-    def _prepare_initial_data(self, item: ArticleCreate, ingestion_time: datetime) -> dict:
+    def _prepare_initial_data(self, item: ArticleCreate, ingestion_time: datetime, file_storage_path: str) -> dict:
         """
         Maps the ArticleCreate schema to the Article model fields.
         """
@@ -27,7 +27,7 @@ class ArticleService(BaseDataProcessingService):
             "created_dt": item.created_dt,
             "updated_dt": item.updated_dt,
             "ingestion_dt": ingestion_time,
-            "file_storage_path": "",  # Placeholder
+            "file_storage_path": file_storage_path 
         }
 
 article_service = ArticleService()

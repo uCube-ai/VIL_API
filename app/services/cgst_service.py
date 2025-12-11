@@ -14,7 +14,7 @@ class CGSTService(BaseDataProcessingService):
             pk_field_name="case_id"
         )
 
-    def _prepare_initial_data(self, item: CGSTCreate, ingestion_time: datetime) -> dict:
+    def _prepare_initial_data(self, item: CGSTCreate, ingestion_time: datetime, file_storage_path: str) -> dict:
         """
         Maps the CGSTCreate schema to the CGST model fields.
         """
@@ -32,7 +32,7 @@ class CGSTService(BaseDataProcessingService):
             "created_dt": item.created_dt,
             "updated_dt": item.updated_dt,
             "ingestion_dt": ingestion_time,
-            "file_storage_path": ""
+            "file_storage_path": file_storage_path
         }
 
 cgst_service = CGSTService()

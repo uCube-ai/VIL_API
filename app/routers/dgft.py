@@ -5,7 +5,7 @@ from app.schemas.dgft_schema import DGFTCreate
 
 
 dgft_config = RouterConfig(
-    table_name="dgft",
+    table_name="casedata_dgft",
     pydantic_schema=DGFTCreate,
     service=dgft_service,
     pk_field_name="case_id",

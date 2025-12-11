@@ -14,7 +14,7 @@ class CEService(BaseDataProcessingService):
             pk_field_name="case_id"
         )
 
-    def _prepare_initial_data(self, item: CECreate, ingestion_time: datetime) -> dict:
+    def _prepare_initial_data(self, item: CECreate, ingestion_time: datetime, file_storage_path: str) -> dict:
         """
         Maps the CECreate schema to the CE model fields.
         """
@@ -37,7 +37,7 @@ class CEService(BaseDataProcessingService):
             "created_dt": item.created_dt,
             "updated_dt": item.updated_dt,
             "ingestion_dt": ingestion_time,
-            "file_storage_path": ""
+            "file_storage_path": file_storage_path
         }
 
 ce_service = CEService()

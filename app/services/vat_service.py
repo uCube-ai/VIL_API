@@ -14,7 +14,7 @@ class VATService(BaseDataProcessingService):
             pk_field_name="case_id"
         )
 
-    def _prepare_initial_data(self, item: VATCreate, ingestion_time: datetime) -> dict:
+    def _prepare_initial_data(self, item: VATCreate, ingestion_time: datetime, file_storage_path: str) -> dict:
         """
         Maps the VATCreate schema to the VAT model fields.
         """
@@ -38,7 +38,7 @@ class VATService(BaseDataProcessingService):
             "created_dt": item.created_dt,
             "updated_dt": item.updated_dt,
             "ingestion_dt": ingestion_time,
-            "file_storage_path": ""
+            "file_storage_path": file_storage_path
         }
 
 vat_service = VATService()

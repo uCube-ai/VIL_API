@@ -5,7 +5,7 @@ from app.schemas.cgst_schema import CGSTCreate
 
 
 cgst_config = RouterConfig(
-    table_name="cgst",
+    table_name="casedata_cgst",
     pydantic_schema=CGSTCreate,
     service=cgst_service,
     pk_field_name="case_id",

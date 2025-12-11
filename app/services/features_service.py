@@ -14,7 +14,7 @@ class FeaturesService(BaseDataProcessingService):
             pk_field_name="feature_id"
         )
 
-    def _prepare_initial_data(self, item: FeaturesCreate, ingestion_time: datetime) -> dict:
+    def _prepare_initial_data(self, item: FeaturesCreate, ingestion_time: datetime, file_storage_path: str) -> dict:
         """
         Maps the FeaturesCreate schema to the Features model fields.
         """
@@ -27,7 +27,7 @@ class FeaturesService(BaseDataProcessingService):
             "created_dt": item.created_dt,
             "updated_dt": item.updated_dt,
             "ingestion_dt": ingestion_time,
-            "file_storage_path": ""  # Placeholder
+            "file_storage_path": file_storage_path
         }
 
 features_service = FeaturesService()

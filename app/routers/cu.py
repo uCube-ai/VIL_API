@@ -5,7 +5,7 @@ from app.schemas.cu_schema import CUCreate
 
 
 cu_config = RouterConfig(
-    table_name="cu",
+    table_name="casedata_cu",
     pydantic_schema=CUCreate,
     service=cu_service,
     pk_field_name="case_id",

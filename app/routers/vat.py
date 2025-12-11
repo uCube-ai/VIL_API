@@ -5,7 +5,7 @@ from app.schemas.vat_schema import VATCreate
 
 
 vat_config = RouterConfig(
-    table_name="vat",
+    table_name="casedata_vat",
     pydantic_schema=VATCreate,
     service=vat_service,
     pk_field_name="case_id",

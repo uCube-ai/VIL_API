@@ -5,7 +5,7 @@ from app.schemas.ce_schema import CECreate
 
 
 ce_config = RouterConfig(
-    table_name="ce",
+    table_name="casedata_ce",
     pydantic_schema=CECreate,
     service=ce_service,
     pk_field_name="case_id",

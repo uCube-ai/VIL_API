@@ -15,7 +15,7 @@ class SGSTService(BaseDataProcessingService):
             pk_field_name="case_id"
         )
 
-    def _prepare_initial_data(self, item: SGSTCreate, ingestion_time: datetime) -> dict:
+    def _prepare_initial_data(self, item: SGSTCreate, ingestion_time: datetime, file_storage_path: str) -> dict:
         """
         Maps the SGSTCreate schema to the SGST model fields.
         """
@@ -43,7 +43,7 @@ class SGSTService(BaseDataProcessingService):
             "created_dt": item.created_dt,
             "updated_dt": item.updated_dt,
             "ingestion_dt": ingestion_time,
-            "file_storage_path": ""
+            "file_storage_path": file_storage_path
         }
 
 sgst_service = SGSTService()

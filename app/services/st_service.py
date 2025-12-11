@@ -14,7 +14,7 @@ class STService(BaseDataProcessingService):
             pk_field_name="case_id"
         )
 
-    def _prepare_initial_data(self, item: STCreate, ingestion_time: datetime) -> dict:
+    def _prepare_initial_data(self, item: STCreate, ingestion_time: datetime, file_storage_path: str) -> dict:
         """
         Maps the STCreate schema to the ST model fields.
         """
@@ -37,7 +37,7 @@ class STService(BaseDataProcessingService):
             "created_dt": item.created_dt,
             "updated_dt": item.updated_dt,
             "ingestion_dt": ingestion_time,
-            "file_storage_path": ""
+            "file_storage_path": file_storage_path
         }
 
 st_service = STService()

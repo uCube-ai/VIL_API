@@ -5,7 +5,7 @@ from app.schemas.st_schema import STCreate
 
 
 st_config = RouterConfig(
-    table_name="st",
+    table_name="casedata_st",
     vil_table_name="cs",
     pydantic_schema=STCreate,
     service=st_service,

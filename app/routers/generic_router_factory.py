@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import List, Dict, Any
+from typing import Dict, Any
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Body, status
@@ -29,7 +29,7 @@ def create_router(config: RouterConfig) -> APIRouter:
         description=f"Processes each {config.entity_name_singular} from a JSON export, saving data and returning a simple success message for each."
     )
     async def upload_from_export(
-        payload: List[Dict[str, Any]] = Body(...),
+        payload: Dict[str, Any] = Body(...),
         db: Session = Depends(get_db)
     ):
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
@@ -49,20 +49,17 @@ def create_router(config: RouterConfig) -> APIRouter:
             transaction_logger.info(f"Log file: {log_filename}")
             transaction_logger.info("=" * 50)
 
-            table_info = None
-            for item in payload:
-                if item.get("type") == "table" and item.get("name") == config.vil_table_name:
-                    table_info = item
-                    break
-
-            if not table_info:
-                detail = f"The JSON payload is missing the required '{config.table_name}' table data block."
+            payload_table_name = payload.get("name")
+            if payload_table_name != config.vil_table_name:
+                detail = (f"Table mismatch. Endpoint expects '{config.vil_table_name}', "
+                          f"but payload contains data for '{payload_table_name}'.")
                 transaction_logger.error(f"FAILURE: {detail}")
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
 
-            items_to_process = table_info.get("data", [])
+            items_to_process = payload.get("data", [])
+
             if not items_to_process:
-                message = f"Payload processed, but no {config.entity_name_plural} were found in the data array."
+                message = f"Payload received, but 'data' array is empty for {config.entity_name_plural}."
                 transaction_logger.warning(message)
                 return {"message": message, "processed_items": []}
 
@@ -131,7 +128,7 @@ def create_router(config: RouterConfig) -> APIRouter:
         description=f"Processes each {config.entity_name_singular} from a JSON export. ONLY updates items found via vil_id. Skips unknown items."
     )
     async def update_from_export(
-        payload: List[Dict[str, Any]] = Body(...),
+        payload: Dict[str, Any] = Body(...),
         db: Session = Depends(get_db)
     ):
         # --- LOGGING SETUP ---
@@ -149,20 +146,16 @@ def create_router(config: RouterConfig) -> APIRouter:
             transaction_logger.info(f"Log file: {log_filename}")
             transaction_logger.info("=" * 50)
 
-            # --- PAYLOAD PARSING ---
-            table_info = None
-            for item in payload:
-                if item.get("type") == "table" and item.get("name") == config.vil_table_name:
-                    table_info = item
-                    break
-            if not table_info:
-                detail = f"The JSON payload is missing the required '{config.vil_table_name}' table data block."
-                transaction_logger.error(f"FAILURE: {detail}")
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+            payload_table_name = payload.get("name")
+            if payload_table_name != config.vil_table_name:
+                 detail = f"Table mismatch: Expected '{config.vil_table_name}', got '{payload_table_name}'"
+                 transaction_logger.error(detail)
+                 raise HTTPException(status_code=400, detail=detail)
             
-            items_to_process = table_info.get("data", [])
+            items_to_process = payload.get("data", [])
+
             if not items_to_process:
-                message = f"Payload processed, but no {config.entity_name_plural} were found in the data array."
+                message = f"Payload received, but 'data' array is empty for {config.entity_name_plural}."
                 transaction_logger.warning(message)
                 return {"message": message, "processed_items": []}
 

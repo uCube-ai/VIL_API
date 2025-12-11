@@ -5,7 +5,7 @@ from app.schemas.sgst_schema import SGSTCreate
 
 
 sgst_config = RouterConfig(
-    table_name="sgst",
+    table_name="casedata_sgst",
     pydantic_schema=SGSTCreate,
     service=sgst_service,
     pk_field_name="case_id",
