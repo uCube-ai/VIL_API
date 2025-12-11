@@ -9,7 +9,7 @@ from pydantic import ValidationError
 
 from database.db_session import get_db
 from app.schemas.common import UploadSuccessResponse
-from app.core.config import settings
+from app.core.logging_config import transaction_logging
 from app.routers.router_config import RouterConfig
 
 transaction_logger = logging.getLogger("transaction_logger")
@@ -32,27 +32,15 @@ def create_router(config: RouterConfig) -> APIRouter:
         payload: Dict[str, Any] = Body(...),
         db: Session = Depends(get_db)
     ):
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
-        log_filename = f"upload_{config.table_name}_{timestamp}.txt"
-        log_filepath = os.path.join(settings.LOGS_DIR, log_filename)
-
-        file_handler = logging.FileHandler(log_filepath)
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-        file_handler.setFormatter(formatter)
-        transaction_logger.addHandler(file_handler)
-
-        start_time = datetime.now(timezone.utc)
         
-        try:
-            transaction_logger.info("=" * 50)
-            transaction_logger.info(f"STARTING NEW '{config.table_name}' DATA DUMP PROCESSING")
-            transaction_logger.info(f"Log file: {log_filename}")
-            transaction_logger.info("=" * 50)
+        with transaction_logging(table_name=config.table_name, operation="upload") as log_file:
+            start_time = datetime.now(timezone.utc)
 
+            # 1. Validation Logic
             payload_table_name = payload.get("name")
             if payload_table_name != config.vil_table_name:
                 detail = (f"Table mismatch. Endpoint expects '{config.vil_table_name}', "
-                          f"but payload contains data for '{payload_table_name}'.")
+                        f"but payload contains data for '{payload_table_name}'.")
                 transaction_logger.error(f"FAILURE: {detail}")
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
 
@@ -63,6 +51,7 @@ def create_router(config: RouterConfig) -> APIRouter:
                 transaction_logger.warning(message)
                 return {"message": message, "processed_items": []}
 
+            # 2. Processing Logic
             success_messages = []
             success_count = 0
             failure_count = 0
@@ -94,6 +83,16 @@ def create_router(config: RouterConfig) -> APIRouter:
                     failure_count += 1
                     transaction_logger.error(f"FAILURE: {config.entity_name_singular.title()} with vil_id:'{item_identifier}' failed processing. Reason: {type(e).__name__} - {e}")
                     continue
+            
+            # 3. Log Summary
+            end_time = datetime.now(timezone.utc)
+            duration = end_time - start_time
+            
+            transaction_logger.info("PROCESSING SUMMARY")
+            transaction_logger.info(f"Total items: {len(items_to_process)}")
+            transaction_logger.info(f"Success: {success_count}")
+            transaction_logger.info(f"Failed: {failure_count}")
+            transaction_logger.info(f"Duration: {duration}")
 
             if not success_messages:
                 detail = f"Data was provided, but no {config.entity_name_plural} could be successfully processed due to errors."
@@ -103,22 +102,6 @@ def create_router(config: RouterConfig) -> APIRouter:
                 "message": f"Successfully processed {len(success_messages)} {config.entity_name_singular}(s).",
                 "processed_items": success_messages
             }
-
-        finally:
-            end_time = datetime.now(timezone.utc)
-            duration = end_time - start_time
-            
-            transaction_logger.info("=" * 50)
-            transaction_logger.info("PROCESSING SUMMARY")
-            transaction_logger.info(f"Total {config.entity_name_plural} in payload: {len(items_to_process)}")
-            transaction_logger.info(f"Successfully ingested: {success_count}")
-            transaction_logger.info(f"Failed to ingest: {failure_count}")
-            transaction_logger.info(f"Total processing time: {duration}")
-            transaction_logger.info("END OF TRANSACTION")
-            transaction_logger.info("=" * 50)
-
-            transaction_logger.removeHandler(file_handler)
-            file_handler.close()
 
     @router.post(
         "/update",
@@ -131,21 +114,11 @@ def create_router(config: RouterConfig) -> APIRouter:
         payload: Dict[str, Any] = Body(...),
         db: Session = Depends(get_db)
     ):
-        # --- LOGGING SETUP ---
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
-        log_filename = f"update_{config.table_name}_{timestamp}.txt"
-        log_filepath = os.path.join(settings.LOGS_DIR, log_filename)
-        file_handler = logging.FileHandler(log_filepath)
-        file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S'))
-        transaction_logger.addHandler(file_handler)
-        start_time = datetime.now(timezone.utc)
-        
-        try:
-            transaction_logger.info("=" * 50)
-            transaction_logger.info(f"STARTING NEW 'UPDATE-ONLY' DUMP PROCESSING for '{config.table_name}'")
-            transaction_logger.info(f"Log file: {log_filename}")
-            transaction_logger.info("=" * 50)
 
+        with transaction_logging(table_name=config.table_name, operation="update") as log_file:
+            start_time = datetime.now(timezone.utc)
+
+            # 1. Validation
             payload_table_name = payload.get("name")
             if payload_table_name != config.vil_table_name:
                  detail = f"Table mismatch: Expected '{config.vil_table_name}', got '{payload_table_name}'"
@@ -159,6 +132,7 @@ def create_router(config: RouterConfig) -> APIRouter:
                 transaction_logger.warning(message)
                 return {"message": message, "processed_items": []}
 
+            # 2. Processing
             success_messages = []
             success_count = 0
             failure_count = 0
@@ -191,23 +165,19 @@ def create_router(config: RouterConfig) -> APIRouter:
                     transaction_logger.error(f"FAILURE (Update): Item '{item_identifier}'. Reason: {e}")
                     continue
 
+            # 3. Log Summary
+            end_time = datetime.now(timezone.utc)
+            duration = end_time - start_time
+            
+            transaction_logger.info("PROCESSING SUMMARY")
+            transaction_logger.info(f"Total items: {len(items_to_process)}")
+            transaction_logger.info(f"Success: {success_count}")
+            transaction_logger.info(f"Skipped/Failed: {failure_count}")
+            transaction_logger.info(f"Duration: {duration}")
+
             return {
                 "message": f"Successfully updated {success_count} item(s). {failure_count} failed or were skipped.",
                 "processed_items": success_messages
             }
-
-        finally:
-            end_time = datetime.now(timezone.utc)
-            duration = end_time - start_time
-            transaction_logger.info("=" * 50)
-            transaction_logger.info("PROCESSING SUMMARY")
-            transaction_logger.info(f"Total items in payload: {len(items_to_process)}")
-            transaction_logger.info(f"Successfully updated: {success_count}")
-            transaction_logger.info(f"Failed or skipped: {failure_count}")
-            transaction_logger.info(f"Total processing time: {duration}")
-            transaction_logger.info("END OF TRANSACTION")
-            transaction_logger.info("=" * 50)
-            transaction_logger.removeHandler(file_handler)
-            file_handler.close()
 
     return router
