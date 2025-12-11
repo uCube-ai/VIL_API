@@ -22,12 +22,12 @@ class VAT(Base):
     order_no = Column(Text, nullable=True)
     judge_name = Column(Text, nullable=True)
     cir_subject = Column(Text, nullable=True)
-    party_name = Column(Text, nullable=True)
     html_file_path = Column(Text, nullable=False, unique=True)
-    file_storage_path = Column(Text, nullable=False)
+    party_name = Column(Text, nullable=True)
     created_dt = Column(DateTime, nullable=True)
     updated_dt = Column(DateTime, nullable=True)
     ingestion_dt = Column(DateTime, nullable=False)
+    file_storage_path = Column(Text, nullable=False)
 
 
     def __repr__(self):

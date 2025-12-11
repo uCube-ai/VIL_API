@@ -12,11 +12,11 @@ class Features(Base):
     feature_date = Column(DateTime, nullable=True, index=True)
     subject = Column(Text, nullable=True)
     summary = Column(Text, nullable=True)
-    file_storage_path = Column(Text, nullable=False)
     html_file_path = Column(Text, nullable=False, unique=True)
     created_dt = Column(DateTime, nullable=True)
     updated_dt = Column(DateTime, nullable=True)
     ingestion_dt = Column(DateTime, nullable=False)
+    file_storage_path = Column(Text, nullable=False)
 
     def __repr__(self):
         """

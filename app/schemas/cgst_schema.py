@@ -11,7 +11,6 @@ class CGSTCreate(BaseModel):
     circular_date: datetime | None = None
     circular_no: str
     cir_subject: str | None = None
-    file_data: str | None = None
     file_path: str
     created_dt: datetime | None = None
     updated_dt: datetime | None = None

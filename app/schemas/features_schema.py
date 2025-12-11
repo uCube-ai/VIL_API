@@ -6,7 +6,6 @@ class FeaturesCreate(BaseModel):
     feature_date: datetime | None = None
     subject: str | None = None
     summary: str | None = None
-    file_data: str | None = None
     file_path: str
     created_dt: datetime | None = None
     updated_dt: datetime | None = None

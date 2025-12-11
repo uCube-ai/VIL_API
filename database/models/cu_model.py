@@ -23,10 +23,10 @@ class CU(Base):
     cir_subject = Column(Text, nullable=True)
     party_name = Column(Text, nullable=True)
     html_file_path = Column(Text, nullable=False, unique=True)
-    file_storage_path = Column(Text, nullable=False)
     created_dt = Column(DateTime, nullable=True)
     updated_dt = Column(DateTime, nullable=True)
     ingestion_dt = Column(DateTime, nullable=False)
+    file_storage_path = Column(Text, nullable=False)
 
 
     def __repr__(self):

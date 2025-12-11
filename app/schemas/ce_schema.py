@@ -15,9 +15,8 @@ class CECreate(BaseModel):
     order_no: str | None = None
     judge_name: str | None = None
     cir_subject: str | None = None
-    file_data: str | None = None
-    file_path: str
     party_name: str | None = None
+    file_path: str
     created_dt: datetime | None = None
     updated_dt: datetime | None = None
 
