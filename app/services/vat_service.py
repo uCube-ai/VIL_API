@@ -33,12 +33,12 @@ class VATService(BaseDataProcessingService):
             "order_no": item.order_no,
             "judge_name": item.judge_name,
             "cir_subject": item.cir_subject,
-            "party_name": item.party_name,
             "html_file_path": item.file_path,
-            "file_storage_path": "",
+            "party_name": item.party_name,
             "created_dt": item.created_dt,
             "updated_dt": item.updated_dt,
-            "ingestion_dt": ingestion_time
+            "ingestion_dt": ingestion_time,
+            "file_storage_path": ""
         }
 
 vat_service = VATService()

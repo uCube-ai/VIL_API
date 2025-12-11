@@ -15,8 +15,8 @@ class BudgetsUnion(Base):
     html_file_path = Column(Text, nullable=False, unique=True)
     created_dt = Column(DateTime, nullable=True)
     updated_dt = Column(DateTime, nullable=True)
-    ingestion_dt = Column(DateTime, nullable=False)
     file_storage_path = Column(Text, nullable=False)
+    ingestion_dt = Column(DateTime, nullable=False)
 
     def __repr__(self):
         """

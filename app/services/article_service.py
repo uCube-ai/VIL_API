@@ -23,11 +23,11 @@ class ArticleService(BaseDataProcessingService):
             "article_date": item.article_date,
             "summary": item.summary,
             "author": item.author,
+            "html_file_path": item.file_path,
             "created_dt": item.created_dt,
             "updated_dt": item.updated_dt,
-            "html_file_path": item.file_path,
+            "ingestion_dt": ingestion_time,
             "file_storage_path": "",  # Placeholder
-            "ingestion_dt": ingestion_time
         }
 
 article_service = ArticleService()

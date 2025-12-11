@@ -23,11 +23,11 @@ class FeaturesService(BaseDataProcessingService):
             "feature_date": item.feature_date,
             "subject": item.subject,
             "summary": item.summary,
+            "html_file_path": item.file_path,
             "created_dt": item.created_dt,
             "updated_dt": item.updated_dt,
-            "html_file_path": item.file_path,
-            "file_storage_path": "",  # Placeholder
-            "ingestion_dt": ingestion_time
+            "ingestion_dt": ingestion_time,
+            "file_storage_path": ""  # Placeholder
         }
 
 features_service = FeaturesService()

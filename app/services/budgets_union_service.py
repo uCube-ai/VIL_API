@@ -23,9 +23,9 @@ class BudgetsUnionService(BaseDataProcessingService):
             "circular_date": item.circular_date,
             "circular_no": item.circular_no,
             "cir_subject": item.cir_subject,
+            "html_file_path": item.file_path,
             "created_dt": item.created_dt,
             "updated_dt": item.updated_dt,
-            "html_file_path": item.file_path,
             "file_storage_path": "",  # Placeholder
             "ingestion_dt": ingestion_time
         }
