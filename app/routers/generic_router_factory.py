@@ -4,6 +4,8 @@ from typing import Dict, Any
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Body, status
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from pydantic import ValidationError
@@ -25,7 +27,6 @@ def create_router(config: RouterConfig) -> APIRouter:
     @router.post(
         "/upload",
         response_model=UploadSuccessResponse,
-        status_code=status.HTTP_201_CREATED,
         summary=f"Endpoint to upload and upsert {config.entity_name_plural.title()}",
         description=f"Processes each {config.entity_name_singular} from a JSON export, saving data and returning a simple success message for each."
     )
@@ -127,17 +128,27 @@ def create_router(config: RouterConfig) -> APIRouter:
             transaction_logger.info(f"Failed: {failure_count}")
             transaction_logger.info(f"Duration: {duration}")
 
-            return {
+            response_payload = {
                 "message": f"Upload processed. Success: {success_count}, Failed: {failure_count}",
                 "processed_items": success_messages,
                 "failed_items": failed_items_list
             }
 
+            content = jsonable_encoder(response_payload)
+
+            if success_count > 0 and failure_count == 0:
+                return JSONResponse(status_code=status.HTTP_201_CREATED, content=content)
+            
+            elif success_count > 0 and failure_count > 0:
+                return JSONResponse(status_code=status.HTTP_207_MULTI_STATUS, content=content)
+            
+            else:
+                return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=content)
+
 
     @router.post(
         "/update",
         response_model=UploadSuccessResponse,
-        status_code=status.HTTP_200_OK,
         summary=f"Endpoint to update existing {config.entity_name_plural.title()}",
         description=f"Processes each {config.entity_name_singular} from a JSON export. ONLY updates items found via vil_id. Skips unknown items."
     )
@@ -232,10 +243,21 @@ def create_router(config: RouterConfig) -> APIRouter:
             duration = end_time - start_time
             transaction_logger.info(f"Summary - Success: {success_count}, Failed: {failure_count}, Time: {duration}")
 
-            return {
-                "message": f"Processed {len(items_to_process)} items.",
+            response_payload = {
+                "message": f"Upsert processed. Success: {success_count}, Failed: {failure_count}",
                 "processed_items": success_messages,
                 "failed_items": failed_items_list 
             }
+
+            content = jsonable_encoder(response_payload)
+
+            if success_count > 0 and failure_count == 0:
+                return JSONResponse(status_code=status.HTTP_200_OK, content=content)
+            
+            elif success_count > 0 and failure_count > 0:
+                return JSONResponse(status_code=status.HTTP_207_MULTI_STATUS, content=content)
+            
+            else:
+                return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=content)
 
     return router
