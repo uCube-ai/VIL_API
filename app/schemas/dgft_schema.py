@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 from datetime import datetime
+from uuid import UUID
 
 class DGFTCreate(BaseModel):
+    universal_id: UUID
     vil_id: int
     prod_id: str | None = None
     prod_name: str | None = None

@@ -19,6 +19,7 @@ class ArticleService(BaseDataProcessingService):
         Maps the ArticleCreate schema to the Article model fields.
         """
         return {
+            "universal_id": item.universal_id,
             "vil_id": item.vil_id,
             "article_date": item.article_date,
             "summary": item.summary,

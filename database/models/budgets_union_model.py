@@ -1,4 +1,5 @@
 from sqlalchemy import Column, BigInteger, DateTime, Text
+from sqlalchemy.dialects.postgresql import UUID
 from database.db_session import Base
 
 class BudgetsUnion(Base):
@@ -8,6 +9,7 @@ class BudgetsUnion(Base):
     __tablename__ = "budgets_union"
 
     circular_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    universal_id = Column(UUID(as_uuid=True), unique=True, nullable=False, index=True)
     vil_id = Column(BigInteger, nullable=False, unique=True)
     circular_date = Column(DateTime, nullable=True, index=True)
     circular_no = Column(Text, nullable=True)

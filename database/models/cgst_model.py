@@ -1,4 +1,5 @@
 from sqlalchemy import Column, BigInteger, DateTime, Text
+from sqlalchemy.dialects.postgresql import UUID
 from database.db_session import Base
 
 class CGST(Base):
@@ -8,6 +9,7 @@ class CGST(Base):
     __tablename__ = "cgst"
 
     case_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    universal_id = Column(UUID(as_uuid=True), unique=True, nullable=False, index=True)
     vil_id = Column(BigInteger, nullable=False, unique=True)
     prod_id = Column(Text, nullable=True)
     prod_name = Column(Text, nullable=True)

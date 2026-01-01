@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 from datetime import datetime
+from uuid import UUID
 
 class BudgetsUnionCreate(BaseModel):
+    universal_id: UUID
     vil_id: int
     circular_date: datetime | None = None
     circular_no: str

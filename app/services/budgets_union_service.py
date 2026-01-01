@@ -19,6 +19,7 @@ class BudgetsUnionService(BaseDataProcessingService):
         Maps the BudgetsUnionCreate schema to the BudgetsUnion model fields.
         """
         return {
+            "universal_id": item.universal_id,
             "vil_id": item.vil_id,
             "circular_date": item.circular_date,
             "circular_no": item.circular_no,

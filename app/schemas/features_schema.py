@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 from datetime import datetime
+from uuid import UUID
 
 class FeaturesCreate(BaseModel):
+    universal_id: UUID
     vil_id: int
     feature_date: datetime | None = None
     subject: str | None = None

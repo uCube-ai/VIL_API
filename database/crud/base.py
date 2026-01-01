@@ -50,6 +50,12 @@ class CRUDBase(Generic[ModelType]):
         """
         return db.query(self.model).filter(self.model.vil_id == vil_id).first()
     
+    def get_by_universal_id(self, db: Session, universal_id: Any) -> Optional[ModelType]:
+        """
+        Retrieves a record by its universal_id.
+        """
+        return db.query(self.model).filter(self.model.universal_id == universal_id).first()
+
     def update(self, db: Session, *, db_obj: ModelType, obj_in: Dict[str, Any]) -> ModelType:
         """
         Updates an existing model instance with data from a dictionary.

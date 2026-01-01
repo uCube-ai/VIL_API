@@ -59,7 +59,7 @@ def create_router(config: RouterConfig) -> APIRouter:
             failure_count = 0
 
             for index, item_dict in enumerate(items_to_process):
-                item_identifier = item_dict.get('vil_id', f'index_{index}')
+                item_identifier = item_dict.get('universal_id', f'index_{index}')
                 
                 try:
                     request_timestamp = datetime.now(timezone.utc)
@@ -75,7 +75,7 @@ def create_router(config: RouterConfig) -> APIRouter:
                     )
                     
                     # C. Success Handling
-                    message = f"CREATED: vil_id {new_db_item.vil_id}"
+                    message = f"CREATED: universal_id {new_db_item.universal_id}"
                     success_messages.append(message)
                     
                     pk_value = getattr(new_db_item, config.pk_field_name, "N/A")
@@ -88,35 +88,35 @@ def create_router(config: RouterConfig) -> APIRouter:
                     
                     failure_count += 1
                     transaction_logger.error(f"Item {item_identifier}: {clean_msg}")
-                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+                    failed_items_list.append({"universal_id": str(item_identifier), "reason": clean_msg})
 
                 except IntegrityError as e:
-                    clean_msg = "Duplicate Error: This record already exists (vil_id or unique constraint violation)."
+                    clean_msg = "Duplicate Error: This record already exists (universal_id or unique constraint violation)."
                     
                     failure_count += 1
                     transaction_logger.error(f"Item {item_identifier}: {clean_msg}")
-                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+                    failed_items_list.append({"universal_id": str(item_identifier), "reason": clean_msg})
 
                 except (IOError, OSError) as e:
                     clean_msg = f"File System Error: Unable to write JSON file. {e.strerror}"
                     
                     failure_count += 1
                     transaction_logger.critical(f"Item {item_identifier}: {clean_msg}")
-                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+                    failed_items_list.append({"universal_id": str(item_identifier), "reason": clean_msg})
 
                 except SQLAlchemyError as e:
                     clean_msg = f"Database Error: {str(e.__cause__) or str(e)}"
                     
                     failure_count += 1
                     transaction_logger.error(f"Item {item_identifier}: {clean_msg}")
-                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+                    failed_items_list.append({"universal_id": str(item_identifier), "reason": clean_msg})
 
                 except Exception as e:
                     clean_msg = f"Unexpected Server Error: {str(e)}"
                     
                     failure_count += 1
                     transaction_logger.error(f"Item {item_identifier}: {clean_msg}")
-                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+                    failed_items_list.append({"universal_id": str(item_identifier), "reason": clean_msg})
 
             # 3. Log Summary
             end_time = datetime.now(timezone.utc)
@@ -150,7 +150,7 @@ def create_router(config: RouterConfig) -> APIRouter:
         "/update",
         response_model=UploadSuccessResponse,
         summary=f"Endpoint to update existing {config.entity_name_plural.title()}",
-        description=f"Processes each {config.entity_name_singular} from a JSON export. ONLY updates items found via vil_id. Skips unknown items."
+        description=f"Processes each {config.entity_name_singular} from a JSON export. ONLY updates items found via vil_id or universal_id. Skips unknown items."
     )
     async def update_from_export(
         payload: Dict[str, Any] = Body(...),
@@ -182,7 +182,7 @@ def create_router(config: RouterConfig) -> APIRouter:
             failure_count = 0
 
             for index, item_dict in enumerate(items_to_process):
-                item_identifier = item_dict.get('vil_id', f'unknown_{config.entity_name_singular}_at_index_{index}')
+                item_identifier = item_dict.get('universal_id', f'unknown_{config.entity_name_singular}_at_index_{index}')
                 
                 try:
                     request_timestamp = datetime.now(timezone.utc)
@@ -199,7 +199,7 @@ def create_router(config: RouterConfig) -> APIRouter:
                          action_type = "CREATED"
                     
                     # --- SUCCESS HANDLING (Common for both) ---
-                    success_messages.append(f"{action_type}: vil_id {db_item.vil_id}")
+                    success_messages.append(f"{action_type}: universal_id {db_item.universal_id}")
                     success_count += 1
                         
                 except ValidationError as e:
@@ -208,35 +208,35 @@ def create_router(config: RouterConfig) -> APIRouter:
                     
                     failure_count += 1
                     transaction_logger.error(f"Item {item_identifier}: {clean_msg}")
-                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+                    failed_items_list.append({"universal_id": str(item_identifier), "reason": clean_msg})
 
                 except IntegrityError as e:
                     clean_msg = "Database Constraint Error: This record likely already exists or violates a unique constraint."
                     
                     failure_count += 1
                     transaction_logger.error(f"Item {item_identifier}: {clean_msg}")
-                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+                    failed_items_list.append({"universal_id": str(item_identifier), "reason": clean_msg})
 
                 except (IOError, OSError) as e:
                     clean_msg = f"File System Error: Unable to write JSON file to storage. {e.strerror}"
                     
                     failure_count += 1
                     transaction_logger.critical(f"Item {item_identifier}: {clean_msg}")
-                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+                    failed_items_list.append({"universal_id": str(item_identifier), "reason": clean_msg})
 
                 except SQLAlchemyError as e:
                     clean_msg = f"Database Error: {str(e.__cause__) or str(e)}"
                     
                     failure_count += 1
                     transaction_logger.error(f"Item {item_identifier}: {clean_msg}")
-                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+                    failed_items_list.append({"universal_id": str(item_identifier), "reason": clean_msg})
 
                 except Exception as e:
                     clean_msg = f"Unexpected Server Error: {str(e)}"
                     
                     failure_count += 1
                     transaction_logger.error(f"Item {item_identifier}: {clean_msg}")
-                    failed_items_list.append({"vil_id": str(item_identifier), "reason": clean_msg})
+                    failed_items_list.append({"universal_id": str(item_identifier), "reason": clean_msg})
 
             # 3. Log Summary
             end_time = datetime.now(timezone.utc)

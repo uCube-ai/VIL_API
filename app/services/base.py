@@ -40,7 +40,7 @@ class BaseDataProcessingService(ABC):
         Handles the generic business logic of processing an item.
         """
         # 1. Calculate File Path (Using vil_id instead of DB PK)
-        new_filename = f"{item.vil_id}_{self.file_suffix}"
+        new_filename = f"{item.universal_id}_{self.file_suffix}"
         target_dir = os.path.join(settings.STORAGE_PATH, self.storage_dir)
         os.makedirs(target_dir, exist_ok=True)
         file_storage_path = os.path.join(target_dir, new_filename)
@@ -87,19 +87,23 @@ class BaseDataProcessingService(ABC):
         It assumes the item exists and will skip (return None) if it doesn't.
         """
         try:
-            # 1. Get the vil_id (which Pydantic has validated)
-            item_vil_id = item.vil_id
-            
-            # 2. Find the existing database object
-            db_obj = self.crud.get_by_vil_id(db=db, vil_id=item_vil_id)
-            
+            db_obj = self.crud.get_by_universal_id(db=db, universal_id=item.universal_id)
+
+            if not db_obj and getattr(item, 'vil_id', None):
+                db_obj = self.crud.get_by_vil_id(db=db, vil_id=item.vil_id)
+
+                if db_obj:
+                     logger.info(f"Migration: Linking universal_id {item.universal_id} to legacy vil_id {item.vil_id}")
+                     db_obj.universal_id = item.universal_id
+
             if not db_obj:
                 # --- SKIP PATH ---
-                logger.warning(f"Update skipped: Record with vil_id {item_vil_id} not found.")
+                ident = getattr(item, 'universal_id', getattr(item, 'vil_id', 'Unknown'))
+                logger.warning(f"Update skipped: Record {ident} not found.")
                 return None
-
-            # --- UPDATE PATH ---
-            logger.info(f"Found existing record (vil_id: {item_vil_id}). Updating...")
+            
+            item_identifier = getattr(item, 'universal_id', getattr(item, 'vil_id', 'unknown'))
+            logger.info(f"Found existing record ({item_identifier}). Updating...")
             
             # 3. Prepare the data dictionary for the update
             data_dict = self._prepare_initial_data(
@@ -123,6 +127,7 @@ class BaseDataProcessingService(ABC):
             return db_obj
 
         except (SQLAlchemyError, IOError, Exception) as e:
-            logger.error(f"Error processing update for vil_id {item.vil_id}. Rolling back transaction. Error: {e}")
+            ident = getattr(item, 'universal_id', getattr(item, 'vil_id', 'Unknown'))
+            logger.error(f"Error processing update for item {ident}. Rolling back...")
             db.rollback()
             raise

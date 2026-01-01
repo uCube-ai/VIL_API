@@ -19,6 +19,7 @@ class DGFTService(BaseDataProcessingService):
         Maps the DGFTCreate schema to the DGFT model fields.
         """
         return {
+            "universal_id": item.universal_id,
             "vil_id": item.vil_id,
             "prod_id": item.prod_id,
             "prod_name": item.prod_name,

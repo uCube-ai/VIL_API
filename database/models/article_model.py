@@ -1,4 +1,5 @@
 from sqlalchemy import Column, BigInteger, DateTime, Text
+from sqlalchemy.dialects.postgresql import UUID
 from database.db_session import Base
 
 class Article(Base):
@@ -8,6 +9,7 @@ class Article(Base):
     __tablename__ = "articles"
 
     article_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    universal_id = Column(UUID(as_uuid=True), unique=True, nullable=False, index=True)
     vil_id = Column(BigInteger, nullable=False, unique=True)
     article_date = Column(DateTime, nullable=True, index=True)
     summary = Column(Text, nullable=True)
@@ -17,6 +19,7 @@ class Article(Base):
     updated_dt = Column(DateTime, nullable=True)
     ingestion_dt = Column(DateTime, nullable=False)
     file_storage_path = Column(Text, nullable=False)
+
 
     def __repr__(self):
         """

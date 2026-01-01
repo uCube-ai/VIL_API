@@ -1,7 +1,10 @@
 from pydantic import BaseModel
 from datetime import datetime
+from uuid import UUID
+
 
 class ArticleCreate(BaseModel):
+    universal_id: UUID
     vil_id: int
     article_date: datetime | None = None
     summary: str | None = None
