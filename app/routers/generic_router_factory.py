@@ -75,7 +75,7 @@ def create_router(config: RouterConfig) -> APIRouter:
                     )
                     
                     # C. Success Handling
-                    message = f"CREATED: universal_id {new_db_item.universal_id}"
+                    message = f"CREATED: universal_id={new_db_item.universal_id}"
                     success_messages.append(message)
                     
                     pk_value = getattr(new_db_item, config.pk_field_name, "N/A")
@@ -199,7 +199,7 @@ def create_router(config: RouterConfig) -> APIRouter:
                          action_type = "CREATED"
                     
                     # --- SUCCESS HANDLING (Common for both) ---
-                    success_messages.append(f"{action_type}: universal_id {db_item.universal_id}")
+                    success_messages.append(f"{action_type}: universal_id={db_item.universal_id}")
                     success_count += 1
                         
                 except ValidationError as e:
