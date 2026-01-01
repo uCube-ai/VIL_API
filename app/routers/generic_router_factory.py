@@ -274,7 +274,7 @@ def create_router(config: RouterConfig) -> APIRouter:
         "/delete",
         response_model=UploadSuccessResponse,
         summary=f"Endpoint to delete {config.entity_name_plural.title()}",
-        description="Deletes records based on a list of universal_ids. Does NOT remove files from storage."
+        description="Deletes records based on a list of universal_ids"
     )
     async def delete_items(
         payload: Dict[str, Any] = Body(...),
