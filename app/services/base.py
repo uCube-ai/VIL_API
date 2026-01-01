@@ -131,3 +131,27 @@ class BaseDataProcessingService(ABC):
             logger.error(f"Error processing update for item {ident}. Rolling back...")
             db.rollback()
             raise
+    
+    async def process_delete_item(self, db: Session, universal_id: str):
+        """
+        Deletes a record by universal_id.
+        Returns the deleted object if successful, None if not found.
+        """
+        try:
+            # 1. Lookup
+            db_obj = self.crud.get_by_universal_id(db, universal_id)
+
+            if not db_obj:
+                logger.warning(f"Delete skipped: Record {universal_id} not found.")
+                return None
+            
+            # 2. Delete (DB Only) and commit
+            db.delete(db_obj)
+            db.commit()
+
+            return db_obj
+        
+        except (SQLAlchemyError, Exception) as e:
+            logger.error(f"Error deleting item {universal_id}. Rolling back. Error: {e}")
+            db.rollback()
+            raise

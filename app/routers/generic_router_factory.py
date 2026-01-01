@@ -1,4 +1,3 @@
-import os
 import logging
 from typing import Dict, Any
 from datetime import datetime, timezone
@@ -50,7 +49,12 @@ def create_router(config: RouterConfig) -> APIRouter:
             if not items_to_process:
                 message = f"Payload received, but 'data' array is empty for {config.entity_name_plural}."
                 transaction_logger.warning(message)
-                return {"message": message, "processed_items": [], "failed_items": []}
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={
+                        "message": message, 
+                        "processed_items": [], 
+                        "failed_items": []})
 
             # 2. Processing Logic
             success_messages = []
@@ -173,7 +177,12 @@ def create_router(config: RouterConfig) -> APIRouter:
             if not items_to_process:
                 message = f"Payload received, but 'data' array is empty for {config.entity_name_plural}."
                 transaction_logger.warning(message)
-                return {"message": message, "processed_items": []}
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={
+                        "message": message, 
+                        "processed_items": [], 
+                        "failed_items": []})
 
             # 2. Processing
             success_messages = []
@@ -257,6 +266,94 @@ def create_router(config: RouterConfig) -> APIRouter:
             elif success_count > 0 and failure_count > 0:
                 return JSONResponse(status_code=status.HTTP_207_MULTI_STATUS, content=content)
             
+            else:
+                return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=content)
+
+
+    @router.post(
+        "/delete",
+        response_model=UploadSuccessResponse,
+        summary=f"Endpoint to delete {config.entity_name_plural.title()}",
+        description="Deletes records based on a list of universal_ids. Does NOT remove files from storage."
+    )
+    async def delete_items(
+        payload: Dict[str, Any] = Body(...),
+        db: Session = Depends(get_db)
+    ):
+        with transaction_logging(table_name=config.table_name, operation="delete") as log_file:
+            start_time = datetime.now(timezone.utc)
+
+            # 1. Validation
+            payload_table_name = payload.get("name")
+            if payload_table_name != config.vil_table_name:
+                detail = (f"Table Mismatch: Endpoint expects '{config.vil_table_name}', "
+                          f"but received '{payload_table_name}'.")
+                transaction_logger.error(detail)
+                raise HTTPException(status_code=400, detail=detail)
+
+            ids_to_delete = payload.get("universal_id", [])
+
+            if not ids_to_delete:
+                message = "Payload received, but 'universal_id' list is empty."
+                transaction_logger.warning(message)
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={
+                        "message": message, 
+                        "processed_items": [], 
+                        "failed_items": []})
+            
+            # 2. Processing
+            success_messages = []
+            failed_items_list = []
+            success_count = 0
+            failure_count = 0
+
+            for uid in ids_to_delete:
+                try:
+                    deleted_item = await config.service.process_delete_item(db=db, universal_id=uid)
+                    
+                    if deleted_item:
+                        success_count += 1
+                        msg = f"DELETED: {uid}"
+                        success_messages.append(msg)
+                        transaction_logger.info(f"SUCCESS: {msg}")
+                    else:
+                        failure_count += 1
+                        clean_msg = "Record not found in database."
+                        transaction_logger.warning(f"SKIPPED: {uid} - {clean_msg}")
+                        failed_items_list.append({"universal_id": str(uid), "reason": clean_msg})
+
+                except Exception as e:
+                    failure_count += 1
+                    clean_msg = f"Database/Server Error: {str(e)}"
+                    transaction_logger.error(f"FAILURE: {uid} - {clean_msg}")
+                    failed_items_list.append({"universal_id": str(uid), "reason": clean_msg})
+
+            # 3. Log Summary & Response
+            end_time = datetime.now(timezone.utc)
+            duration = end_time - start_time
+            
+            transaction_logger.info("PROCESSING SUMMARY")
+            transaction_logger.info(f"Total requested: {len(ids_to_delete)}")
+            transaction_logger.info(f"Deleted: {success_count}")
+            transaction_logger.info(f"Failed/Skipped: {failure_count}")
+            transaction_logger.info(f"Duration: {duration}")
+
+            response_payload = {
+                "message": f"Delete processed. Success: {success_count}, Failed: {failure_count}",
+                "processed_items": success_messages,
+                "failed_items": failed_items_list
+            }
+            
+            content = jsonable_encoder(response_payload)
+
+            if success_count > 0 and failure_count == 0:
+                return JSONResponse(status_code=status.HTTP_200_OK, content=content)
+            
+            elif success_count > 0 and failure_count > 0:
+                return JSONResponse(status_code=status.HTTP_207_MULTI_STATUS, content=content)
+
             else:
                 return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=content)
 
